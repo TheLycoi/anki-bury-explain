@@ -134,6 +134,19 @@ class BuildPromptTests(unittest.TestCase):
         self.assertIn("4 times", out)
         self.assertIn("mitochondria", out)
 
+    def test_default_template_has_placeholders(self):
+        self.assertIn("{agains}", logic.DEFAULT_PROMPT_TEMPLATE)
+        self.assertIn("{card}", logic.DEFAULT_PROMPT_TEMPLATE)
+
+    def test_default_template_audits_against_rules(self):
+        self.assertIn("rule", logic.DEFAULT_PROMPT_TEMPLATE.lower())
+
+    def test_default_template_renders_rule_audit(self):
+        out = logic.build_prompt(logic.DEFAULT_PROMPT_TEMPLATE, 3, "photosynthesis")
+        self.assertIn("rule", out.lower())
+        self.assertIn("photosynthesis", out)
+        self.assertIn("3 times", out)
+
     def test_empty_card_text(self):
         out = logic.build_prompt("{card}", 3, "")
         self.assertIn("no extractable text", out)

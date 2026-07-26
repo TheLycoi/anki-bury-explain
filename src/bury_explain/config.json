@@ -10,5 +10,5 @@
     "provider": "chatgpt",
     "custom_url": "",
     "open_in": "sidebar",
-    "prompt_template": "I just failed this Anki card {agains} times in a row. Help me actually understand it:\n\n1. Explain the core concept simply in 1-2 sentences.\n2. Give me one mnemonic or memory hook.\n3. Tell me what I'm most likely confusing this with.\n\nCard content: {card}"
+    "prompt_template": "I just failed this Anki card {agains} times in a row. Help me actually understand it:\n\n1. Explain the core concept simply in 1-2 sentences.\n2. Give me one mnemonic or memory hook.\n3. Tell me what I'm most likely confusing this with.\n\nThen audit this card against Wozniak's 20 rules of formulating knowledge. For each rule it violates, output: failed rule #N (short rule name) — fix: <concrete rewritten card text>. If it passes, say 'card formulation OK'. Rules: 1 do not learn what you don't understand, 2 learn before you memorize, 3 build upon basics, 4 minimum information principle, 5 cloze deletion is easy, 6 use imagery, 7 use mnemonics, 8 graphic deletion, 9 avoid sets, 10 avoid enumerations, 11 combat interference, 12 optimize wording, 13 refer to other memories, 14 personalize with examples, 15 rely on emotional states, 16 context cues simplify wording, 17 redundancy can help, 18 provide sources, 19 provide date stamping, 20 prioritize.\n\nCard content: {card}"
 }

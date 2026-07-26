@@ -16,4 +16,4 @@ that dialog reads and writes.
 | `provider` | string | `chatgpt` | One of `chatgpt`, `claude`, `perplexity`, `duckduckgo`, `google_ai`, `custom`. |
 | `custom_url` | string | `""` | Used only when `provider` is `custom`; must contain `{q}` where the URL-encoded prompt goes. |
 | `open_in` | string | `sidebar` | `sidebar` (in-app dock) or `browser` (system browser). |
-| `prompt_template` | string | see default | Prompt sent to the AI. Supports `{agains}` (fail count) and `{card}` (cleaned card text). |
+| `prompt_template` | string | see default | Prompt sent to the AI. Asks for a simple explanation, a mnemonic, likely confusions, and an audit of the card against Wozniak's 20 rules of formulating knowledge (with concrete rewrite suggestions for any rule it fails). Supports `{agains}` (fail count) and `{card}` (cleaned card text). |

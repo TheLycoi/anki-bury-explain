@@ -41,7 +41,7 @@ same card into the ground.
 | `provider` | Which AI provider to open | `ChatGPT` |
 | `custom_url` | URL template used when `provider` is `custom` | _(empty)_ |
 | `open_in` | Where the provider opens — sidebar or browser | `sidebar` |
-| `prompt_template` | Template used to pre-fill the AI query with the card's content | built-in default |
+| `prompt_template` | Template used to pre-fill the AI query with the card's content; asks for a simple explanation, a mnemonic, likely confusions, and an audit against Wozniak's 20 rules of formulating knowledge with concrete rewrite suggestions | built-in default |
 
 ## Building
 

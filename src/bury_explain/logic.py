@@ -12,12 +12,29 @@ TYPE_NEW = 0
 TYPE_LEARNING = 1
 
 # Default prompt template (ported from the owner's bury_explain_bridge).
+# Also audits the card against Wozniak's "Twenty rules of formulating
+# knowledge" so failed cards get concrete rewrite suggestions, not just an
+# explanation. The rule list is embedded (compact, <=6 words each) so the
+# AI is grounded even without web access. Keep under ~1500 chars: this
+# prompt travels URL-encoded in a query param.
 DEFAULT_PROMPT_TEMPLATE = (
     "I just failed this Anki card {agains} times in a row. Help me actually "
     "understand it:\n\n"
     "1. Explain the core concept simply in 1-2 sentences.\n"
     "2. Give me one mnemonic or memory hook.\n"
     "3. Tell me what I'm most likely confusing this with.\n\n"
+    "Then audit this card against Wozniak's 20 rules of formulating "
+    "knowledge. For each rule it violates, output: failed rule #N (short "
+    "rule name) — fix: <concrete rewritten card text>. If it passes, say "
+    "'card formulation OK'. Rules: "
+    "1 do not learn what you don't understand, 2 learn before you memorize, "
+    "3 build upon basics, 4 minimum information principle, 5 cloze deletion "
+    "is easy, 6 use imagery, 7 use mnemonics, 8 graphic deletion, 9 avoid "
+    "sets, 10 avoid enumerations, 11 combat interference, 12 optimize "
+    "wording, 13 refer to other memories, 14 personalize with examples, "
+    "15 rely on emotional states, 16 context cues simplify wording, "
+    "17 redundancy can help, 18 provide sources, 19 provide date stamping, "
+    "20 prioritize.\n\n"
     "Card content: {card}"
 )
 

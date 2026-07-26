@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 — 2026-07-26
+
+- Default prompt now audits the failed card against Piotr Wozniak's "Twenty
+  rules of formulating knowledge" and suggests concrete rewrites for any
+  rule it violates, in addition to the existing simple explanation,
+  mnemonic, and likely-confusion help
+
 ## 1.0.0 — 2026-07-26
 
 - Initial release
