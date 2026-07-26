@@ -1,4 +1,4 @@
-"""Thin Anki-collection layer for Bury & Explain.
+"""Thin Anki-collection layer for Bury Explain.
 
 These helpers touch the live collection / note objects. They are intentionally
 tiny and free of UI so the interesting decision-making stays in ``logic.py``.

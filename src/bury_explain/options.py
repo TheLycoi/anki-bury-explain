@@ -1,4 +1,4 @@
-"""Minimalist options dialog for Bury & Explain.
+"""Minimalist options dialog for Bury Explain.
 
 A single flat column: small gray uppercase section headers over plain rows.
 No tabs, no icons. Reads/writes config via the add-on manager.
@@ -58,7 +58,7 @@ def _row(label_text, widget):
 class OptionsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent or mw)
-        self.setWindowTitle("Bury & Explain Options")
+        self.setWindowTitle("Bury Explain Options")
         self.setMinimumWidth(450)
         self._cfg = {**logic.DEFAULT_CONFIG, **(mw.addonManager.getConfig(__name__.rsplit(".", 1)[0]) or {})}
         self._build()
@@ -94,6 +94,9 @@ class OptionsDialog(QDialog):
         outer.addWidget(_section("BURY"))
         self.bury = QCheckBox("Bury the card when triggered")
         outer.addWidget(self.bury)
+        self.add_tag = QCheckBox("Tag the card")
+        self.add_tag.toggled.connect(self._sync_tag_enabled)
+        outer.addWidget(self.add_tag)
         self.tag = QLineEdit()
         outer.addLayout(_row("Tag to add", self.tag))
 
@@ -140,6 +143,9 @@ class OptionsDialog(QDialog):
         is_custom = _PROVIDERS[self.provider.currentIndex()][1] == "custom"
         self.custom_url.setEnabled(is_custom)
 
+    def _sync_tag_enabled(self):
+        self.tag.setEnabled(self.add_tag.isChecked())
+
     def _load(self, cfg):
         self.enabled.setChecked(bool(cfg.get("enabled", True)))
         self.threshold.setValue(int(cfg.get("again_threshold", 3)))
@@ -148,7 +154,9 @@ class OptionsDialog(QDialog):
         self.skip_image.setChecked(bool(cfg.get("skip_image_cards", True)))
         self.notifications.setChecked(bool(cfg.get("show_notification", True)))
         self.bury.setChecked(bool(cfg.get("bury", True)))
+        self.add_tag.setChecked(bool(cfg.get("add_tag", True)))
         self.tag.setText(str(cfg.get("tag", "")))
+        self._sync_tag_enabled()
         self._select(self.provider, _PROVIDERS, cfg.get("provider", "chatgpt"))
         self.custom_url.setText(str(cfg.get("custom_url", "")))
         self._select(self.open_in, _OPEN_IN, cfg.get("open_in", "sidebar"))
@@ -175,6 +183,7 @@ class OptionsDialog(QDialog):
             "skip_image_cards": self.skip_image.isChecked(),
             "show_notification": self.notifications.isChecked(),
             "bury": self.bury.isChecked(),
+            "add_tag": self.add_tag.isChecked(),
             "tag": self.tag.text().strip(),
             "provider": _PROVIDERS[self.provider.currentIndex()][1],
             "custom_url": self.custom_url.text().strip(),

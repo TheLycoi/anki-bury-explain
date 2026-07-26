@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build script for Bury & Explain.
+"""Build script for Bury Explain.
 
 Zips the *contents* of src/bury_explain/ (files at the zip root, not nested
 inside a folder — AnkiWeb requires this layout) into dist/bury_explain.ankiaddon.

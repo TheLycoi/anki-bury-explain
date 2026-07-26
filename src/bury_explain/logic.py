@@ -1,11 +1,11 @@
-"""Pure-Python core logic for the Bury & Explain add-on.
+"""Pure-Python core logic for the Bury Explain add-on.
 
 This module deliberately imports nothing from ``anki`` or ``aqt`` so it can be
 unit-tested with a plain ``python3 -m unittest`` run and reused anywhere.
 """
 
 import re
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 # Card queue/type constants (mirrors Anki's values without importing anki).
 TYPE_NEW = 0
@@ -44,6 +44,7 @@ DEFAULT_CONFIG = {
     "again_threshold": 3,
     "timeframe_hours": 24,
     "bury": True,
+    "add_tag": True,
     "tag": "buryexplain-leech",
     "ignore_new_cards": False,
     "skip_image_cards": True,
@@ -61,6 +62,25 @@ _PROVIDER_TEMPLATES = {
     "perplexity": "https://www.perplexity.ai/search?q={q}",
     "duckduckgo": "https://duckduckgo.com/?q={q}&ia=chat",
     "google_ai": "https://www.google.com/search?udm=50&q={q}",
+}
+
+# Provider -> base/home page (no query) used by the manual "AI" toolbar toggle.
+_PROVIDER_HOMES = {
+    "chatgpt": "https://chatgpt.com",
+    "claude": "https://claude.ai/new",
+    "perplexity": "https://www.perplexity.ai",
+    "duckduckgo": "https://duckduckgo.com",
+    "google_ai": "https://www.google.com",
+}
+
+# Provider -> human-readable name shown in the sidebar header.
+_PROVIDER_NAMES = {
+    "chatgpt": "ChatGPT",
+    "claude": "Claude",
+    "perplexity": "Perplexity",
+    "duckduckgo": "DuckDuckGo",
+    "google_ai": "Google AI",
+    "custom": "Custom",
 }
 
 
@@ -152,3 +172,32 @@ def provider_url(provider, custom_template, prompt):
 
     template = _PROVIDER_TEMPLATES.get(key, _PROVIDER_TEMPLATES["chatgpt"])
     return template.replace("{q}", encoded)
+
+
+def provider_home_url(provider, custom_template):
+    """Return the provider's base/home page (no query) for the manual toggle.
+
+    For ``custom`` the scheme+host of the user's template is used. Unknown or
+    empty providers (and a custom template with no usable host) fall back to
+    the ChatGPT home page.
+    """
+    key = (provider or "").strip().lower()
+
+    if key == "custom":
+        if custom_template:
+            parts = urlsplit(custom_template.strip())
+            if parts.scheme and parts.netloc:
+                return f"{parts.scheme}://{parts.netloc}"
+        return _PROVIDER_HOMES["chatgpt"]
+
+    return _PROVIDER_HOMES.get(key, _PROVIDER_HOMES["chatgpt"])
+
+
+def provider_display_name(provider):
+    """Human-readable provider name for the sidebar header ("AI · <name>")."""
+    key = (provider or "").strip().lower()
+    if key in _PROVIDER_NAMES:
+        return _PROVIDER_NAMES[key]
+    if not key:
+        return "AI"
+    return provider.strip().title()

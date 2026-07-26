@@ -233,5 +233,81 @@ class ProviderUrlTests(unittest.TestCase):
         self.assertIn("%", url)
 
 
+class ProviderHomeUrlTests(unittest.TestCase):
+    def test_chatgpt(self):
+        self.assertEqual(logic.provider_home_url("chatgpt", ""), "https://chatgpt.com")
+
+    def test_claude(self):
+        self.assertEqual(logic.provider_home_url("claude", ""), "https://claude.ai/new")
+
+    def test_perplexity(self):
+        self.assertEqual(
+            logic.provider_home_url("perplexity", ""), "https://www.perplexity.ai"
+        )
+
+    def test_duckduckgo(self):
+        self.assertEqual(
+            logic.provider_home_url("duckduckgo", ""), "https://duckduckgo.com"
+        )
+
+    def test_google_ai(self):
+        self.assertEqual(
+            logic.provider_home_url("google_ai", ""), "https://www.google.com"
+        )
+
+    def test_unknown_falls_back_to_chatgpt(self):
+        self.assertEqual(logic.provider_home_url("banana", ""), "https://chatgpt.com")
+
+    def test_empty_falls_back_to_chatgpt(self):
+        self.assertEqual(logic.provider_home_url("", ""), "https://chatgpt.com")
+
+    def test_custom_uses_scheme_and_host(self):
+        self.assertEqual(
+            logic.provider_home_url("custom", "https://example.com/chat?q={q}"),
+            "https://example.com",
+        )
+
+    def test_custom_with_port(self):
+        self.assertEqual(
+            logic.provider_home_url("custom", "http://localhost:8080/s?q={q}"),
+            "http://localhost:8080",
+        )
+
+    def test_custom_without_host_falls_back(self):
+        self.assertEqual(
+            logic.provider_home_url("custom", "not-a-url"), "https://chatgpt.com"
+        )
+
+    def test_custom_empty_template_falls_back(self):
+        self.assertEqual(logic.provider_home_url("custom", ""), "https://chatgpt.com")
+
+    def test_case_insensitive(self):
+        self.assertEqual(
+            logic.provider_home_url("ChatGPT", ""), "https://chatgpt.com"
+        )
+
+
+class ProviderDisplayNameTests(unittest.TestCase):
+    def test_known_providers(self):
+        self.assertEqual(logic.provider_display_name("chatgpt"), "ChatGPT")
+        self.assertEqual(logic.provider_display_name("claude"), "Claude")
+        self.assertEqual(logic.provider_display_name("google_ai"), "Google AI")
+        self.assertEqual(logic.provider_display_name("custom"), "Custom")
+
+    def test_case_insensitive(self):
+        self.assertEqual(logic.provider_display_name("DuckDuckGo"), "DuckDuckGo")
+
+    def test_unknown_titlecased(self):
+        self.assertEqual(logic.provider_display_name("banana"), "Banana")
+
+    def test_empty_falls_back(self):
+        self.assertEqual(logic.provider_display_name(""), "AI")
+
+
+class DefaultConfigTests(unittest.TestCase):
+    def test_add_tag_default_true(self):
+        self.assertTrue(logic.DEFAULT_CONFIG["add_tag"])
+
+
 if __name__ == "__main__":
     unittest.main()

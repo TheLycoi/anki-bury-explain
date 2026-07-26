@@ -3,6 +3,7 @@
     "again_threshold": 3,
     "timeframe_hours": 24,
     "bury": true,
+    "add_tag": true,
     "tag": "buryexplain-leech",
     "ignore_new_cards": false,
     "skip_image_cards": true,
