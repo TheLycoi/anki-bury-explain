@@ -1,0 +1,14 @@
+{
+    "enabled": true,
+    "again_threshold": 3,
+    "timeframe_hours": 24,
+    "bury": true,
+    "tag": "buryexplain-leech",
+    "ignore_new_cards": false,
+    "skip_image_cards": true,
+    "show_notification": true,
+    "provider": "chatgpt",
+    "custom_url": "",
+    "open_in": "sidebar",
+    "prompt_template": "I just failed this Anki card {agains} times in a row. Help me actually understand it:\n\n1. Explain the core concept simply in 1-2 sentences.\n2. Give me one mnemonic or memory hook.\n3. Tell me what I'm most likely confusing this with.\n\nCard content: {card}"
+}
