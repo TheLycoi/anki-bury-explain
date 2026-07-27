@@ -13,8 +13,8 @@ TYPE_LEARNING = 1
 
 # Default prompt template (ported from the owner's bury_explain_bridge).
 # Also audits the card against Wozniak's "Twenty rules of formulating
-# knowledge" so failed cards get concrete rewrite suggestions, not just an
-# explanation. The rule list is embedded (compact, <=6 words each) so the
+# knowledge" so failed cards get concrete rewrite suggestions in addition
+# to an explanation. The rule list is embedded (compact, <=6 words each) so the
 # AI is grounded even without web access. Keep under ~1500 chars: this
 # prompt travels URL-encoded in a query param.
 DEFAULT_PROMPT_TEMPLATE = (
@@ -25,7 +25,7 @@ DEFAULT_PROMPT_TEMPLATE = (
     "3. Tell me what I'm most likely confusing this with.\n\n"
     "Then audit this card against Wozniak's 20 rules of formulating "
     "knowledge. For each rule it violates, output: failed rule #N (short "
-    "rule name) — fix: <concrete rewritten card text>. If it passes, say "
+    "rule name), fix: <concrete rewritten card text>. If it passes, say "
     "'card formulation OK'. Rules: "
     "1 do not learn what you don't understand, 2 learn before you memorize, "
     "3 build upon basics, 4 minimum information principle, 5 cloze deletion "

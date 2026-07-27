@@ -1,4 +1,4 @@
-"""Bury Explain — AI help when you keep failing a card.
+"""Bury Explain: AI help when you keep failing a card.
 
 After N "Again" presses within a time window, the card is auto-buried (and
 optionally tagged) and an AI sidebar opens with the question pre-searched. A
@@ -84,7 +84,7 @@ def _act_on_card(card, agains, cfg):
 
         if cfg.get("show_notification", True):
             tooltip(
-                f"Bury Explain: buried after {agains} fails — asking AI",
+                f"Bury Explain: buried after {agains} fails, asking AI",
                 period=3000,
             )
     except Exception as exc:
