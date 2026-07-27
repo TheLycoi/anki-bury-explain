@@ -6,6 +6,7 @@ Anki restarts. Kept deliberately small: a slim text-only header (no icons,
 no logos, no provider images) over a single web view.
 """
 
+import json
 import os
 
 from aqt import mw
@@ -36,6 +37,64 @@ _view = None
 _profile = None
 _header_label = None
 _current_url = ""
+# Prompt to auto-type into the page once the next load finishes. Used to keep
+# ChatGPT in a real Temporary Chat: we load ?temporary-chat=true with no `q`
+# (a q= auto-submit would create a saved conversation and drop temp mode), then
+# type + send the prompt ourselves after the composer appears.
+_pending_prompt = None
+
+
+def _inject_prompt_js(prompt):
+    """JS that polls for the composer, types ``prompt``, then clicks send.
+
+    Kept defensive: it retries while ChatGPT's React app mounts, tries a few
+    known selectors, and never throws if the page shape is unexpected (e.g. a
+    login wall). Selectors track ChatGPT's current DOM and may need updating if
+    they change their UI.
+    """
+    payload = json.dumps(prompt)
+    return (
+        "(function(){"
+        "var PROMPT=" + payload + ";"
+        "var tries=0;"
+        "var t=setInterval(function(){"
+        "  tries++;"
+        "  var box=document.querySelector('#prompt-textarea')"
+        "    ||document.querySelector('div[contenteditable=\"true\"]')"
+        "    ||document.querySelector('textarea');"
+        "  if(!box){ if(tries>120){clearInterval(t);} return; }"
+        "  clearInterval(t);"
+        "  box.focus();"
+        "  try{"
+        "    if(box.tagName==='TEXTAREA'){"
+        "      var d=Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value');"
+        "      d.set.call(box,PROMPT);"
+        "      box.dispatchEvent(new Event('input',{bubbles:true}));"
+        "    } else {"
+        "      document.execCommand('insertText',false,PROMPT);"
+        "    }"
+        "  }catch(e){}"
+        "  var st=0;"
+        "  var s=setInterval(function(){"
+        "    st++;"
+        "    var btn=document.querySelector('[data-testid=\"send-button\"]')"
+        "      ||document.querySelector('button[aria-label*=\"Send\"]');"
+        "    if(btn&&!btn.disabled){ clearInterval(s); btn.click(); }"
+        "    else if(st>40){ clearInterval(s); }"
+        "  },200);"
+        "},200);"
+        "})();"
+    )
+
+
+def _on_load_finished(ok):
+    """After a navigation completes, run any queued prompt injection once."""
+    global _pending_prompt
+    if not ok or not _pending_prompt or _view is None:
+        return
+    prompt = _pending_prompt
+    _pending_prompt = None
+    _view.page().runJavaScript(_inject_prompt_js(prompt))
 
 
 def _profile_dir():
@@ -110,6 +169,7 @@ def _build_dock():
     global _dock, _view
     _view = QWebEngineView(mw)
     _view.setPage(QWebEnginePage(_get_profile(), _view))
+    _view.loadFinished.connect(_on_load_finished)
 
     container = QWidget()
     layout = QVBoxLayout(container)
@@ -135,12 +195,17 @@ def _build_dock():
         mw.resizeDocks([_dock], [max(420, mw.width() // 3)], Qt.Orientation.Horizontal)
 
 
-def open_url(url, provider_label=""):
-    """Create-or-raise the sidebar dock and load ``url`` into it."""
-    global _current_url
+def open_url(url, provider_label="", inject_prompt=None):
+    """Create-or-raise the sidebar dock and load ``url`` into it.
+
+    If ``inject_prompt`` is given, it is typed into the page and sent once the
+    load finishes (used to fill a Temporary Chat without a q= auto-submit).
+    """
+    global _current_url, _pending_prompt
     if _dock is None:
         _build_dock()
     _current_url = url
+    _pending_prompt = inject_prompt or None
     if _header_label is not None:
         _header_label.setText(f"AI · {provider_label}" if provider_label else "AI")
     _view.setUrl(QUrl(url))

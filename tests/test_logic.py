@@ -170,7 +170,7 @@ class ProviderUrlTests(unittest.TestCase):
     def test_chatgpt(self):
         self.assertEqual(
             logic.provider_url("chatgpt", "", "hello"),
-            "https://chatgpt.com/?q=hello",
+            "https://chatgpt.com/?temporary-chat=true&q=hello",
         )
 
     def test_claude(self):
@@ -191,22 +191,22 @@ class ProviderUrlTests(unittest.TestCase):
             "https://duckduckgo.com/?q=hi&ia=chat",
         )
 
-    def test_google_ai(self):
+    def test_gemini(self):
         self.assertEqual(
-            logic.provider_url("google_ai", "", "hi"),
-            "https://www.google.com/search?udm=50&q=hi",
+            logic.provider_url("gemini", "", "hi"),
+            "https://gemini.google.com/app?q=hi",
         )
 
     def test_unknown_falls_back_to_chatgpt(self):
         self.assertEqual(
             logic.provider_url("banana", "", "hi"),
-            "https://chatgpt.com/?q=hi",
+            "https://chatgpt.com/?temporary-chat=true&q=hi",
         )
 
     def test_empty_falls_back_to_chatgpt(self):
         self.assertEqual(
             logic.provider_url("", "", "hi"),
-            "https://chatgpt.com/?q=hi",
+            "https://chatgpt.com/?temporary-chat=true&q=hi",
         )
 
     def test_custom(self):
@@ -218,24 +218,32 @@ class ProviderUrlTests(unittest.TestCase):
     def test_custom_without_placeholder_falls_back(self):
         self.assertEqual(
             logic.provider_url("custom", "https://x.com/no-placeholder", "hi"),
-            "https://chatgpt.com/?q=hi",
+            "https://chatgpt.com/?temporary-chat=true&q=hi",
         )
 
     def test_encodes_ampersand_and_spaces(self):
         url = logic.provider_url("chatgpt", "", "a & b c")
-        self.assertEqual(url, "https://chatgpt.com/?q=a%20%26%20b%20c")
+        self.assertEqual(
+            url, "https://chatgpt.com/?temporary-chat=true&q=a%20%26%20b%20c"
+        )
         self.assertNotIn(" ", url)
         self.assertNotIn("q=a &", url)
 
     def test_encodes_unicode(self):
         url = logic.provider_url("chatgpt", "", "café ☕")
-        self.assertEqual(url, "https://chatgpt.com/?q=" + quote("café ☕", safe=""))
+        self.assertEqual(
+            url,
+            "https://chatgpt.com/?temporary-chat=true&q=" + quote("café ☕", safe=""),
+        )
         self.assertIn("%", url)
 
 
 class ProviderHomeUrlTests(unittest.TestCase):
     def test_chatgpt(self):
-        self.assertEqual(logic.provider_home_url("chatgpt", ""), "https://chatgpt.com")
+        self.assertEqual(
+            logic.provider_home_url("chatgpt", ""),
+            "https://chatgpt.com/?temporary-chat=true",
+        )
 
     def test_claude(self):
         self.assertEqual(logic.provider_home_url("claude", ""), "https://claude.ai/new")
@@ -250,16 +258,21 @@ class ProviderHomeUrlTests(unittest.TestCase):
             logic.provider_home_url("duckduckgo", ""), "https://duckduckgo.com"
         )
 
-    def test_google_ai(self):
+    def test_gemini(self):
         self.assertEqual(
-            logic.provider_home_url("google_ai", ""), "https://www.google.com"
+            logic.provider_home_url("gemini", ""), "https://gemini.google.com/app"
         )
 
     def test_unknown_falls_back_to_chatgpt(self):
-        self.assertEqual(logic.provider_home_url("banana", ""), "https://chatgpt.com")
+        self.assertEqual(
+            logic.provider_home_url("banana", ""),
+            "https://chatgpt.com/?temporary-chat=true",
+        )
 
     def test_empty_falls_back_to_chatgpt(self):
-        self.assertEqual(logic.provider_home_url("", ""), "https://chatgpt.com")
+        self.assertEqual(
+            logic.provider_home_url("", ""), "https://chatgpt.com/?temporary-chat=true"
+        )
 
     def test_custom_uses_scheme_and_host(self):
         self.assertEqual(
@@ -275,15 +288,20 @@ class ProviderHomeUrlTests(unittest.TestCase):
 
     def test_custom_without_host_falls_back(self):
         self.assertEqual(
-            logic.provider_home_url("custom", "not-a-url"), "https://chatgpt.com"
+            logic.provider_home_url("custom", "not-a-url"),
+            "https://chatgpt.com/?temporary-chat=true",
         )
 
     def test_custom_empty_template_falls_back(self):
-        self.assertEqual(logic.provider_home_url("custom", ""), "https://chatgpt.com")
+        self.assertEqual(
+            logic.provider_home_url("custom", ""),
+            "https://chatgpt.com/?temporary-chat=true",
+        )
 
     def test_case_insensitive(self):
         self.assertEqual(
-            logic.provider_home_url("ChatGPT", ""), "https://chatgpt.com"
+            logic.provider_home_url("ChatGPT", ""),
+            "https://chatgpt.com/?temporary-chat=true",
         )
 
 
@@ -291,7 +309,7 @@ class ProviderDisplayNameTests(unittest.TestCase):
     def test_known_providers(self):
         self.assertEqual(logic.provider_display_name("chatgpt"), "ChatGPT")
         self.assertEqual(logic.provider_display_name("claude"), "Claude")
-        self.assertEqual(logic.provider_display_name("google_ai"), "Google AI")
+        self.assertEqual(logic.provider_display_name("gemini"), "Gemini")
         self.assertEqual(logic.provider_display_name("custom"), "Custom")
 
     def test_case_insensitive(self):

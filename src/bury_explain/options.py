@@ -27,7 +27,7 @@ _PROVIDERS = [
     ("Claude", "claude"),
     ("Perplexity", "perplexity"),
     ("DuckDuckGo", "duckduckgo"),
-    ("Google AI", "google_ai"),
+    ("Gemini", "gemini"),
     ("Custom", "custom"),
 ]
 

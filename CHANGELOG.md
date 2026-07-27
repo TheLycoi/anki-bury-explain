@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.0 (2026-07-27)
+
+- ChatGPT now opens in a Temporary Chat. The sidebar loads
+  `chatgpt.com/?temporary-chat=true` and types the prompt in and sends it
+  itself, because a URL that auto-submits would create a saved conversation
+  and drop the temporary state
+- Replaced the "Google AI" provider (which only opened the Google homepage)
+  with Gemini at `gemini.google.com`
+- Gemini uses the same in-sidebar prompt injection as ChatGPT, since it has
+  no reliable URL parameter to prefill and send a prompt
+- Prompt injection only runs in the sidebar view. In system-browser mode the
+  providers still open with the prompt in the URL
+
 ## 1.2.0 (2026-07-26)
 
 - Renamed to Bury Explain (was "Bury & Explain") across all user-visible

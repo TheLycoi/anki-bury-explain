@@ -57,20 +57,20 @@ DEFAULT_CONFIG = {
 
 # Provider -> URL template. ``{q}`` is replaced with the URL-encoded prompt.
 _PROVIDER_TEMPLATES = {
-    "chatgpt": "https://chatgpt.com/?q={q}",
+    "chatgpt": "https://chatgpt.com/?temporary-chat=true&q={q}",
     "claude": "https://claude.ai/new?q={q}",
     "perplexity": "https://www.perplexity.ai/search?q={q}",
     "duckduckgo": "https://duckduckgo.com/?q={q}&ia=chat",
-    "google_ai": "https://www.google.com/search?udm=50&q={q}",
+    "gemini": "https://gemini.google.com/app?q={q}",
 }
 
 # Provider -> base/home page (no query) used by the manual "AI" toolbar toggle.
 _PROVIDER_HOMES = {
-    "chatgpt": "https://chatgpt.com",
+    "chatgpt": "https://chatgpt.com/?temporary-chat=true",
     "claude": "https://claude.ai/new",
     "perplexity": "https://www.perplexity.ai",
     "duckduckgo": "https://duckduckgo.com",
-    "google_ai": "https://www.google.com",
+    "gemini": "https://gemini.google.com/app",
 }
 
 # Provider -> human-readable name shown in the sidebar header.
@@ -79,7 +79,7 @@ _PROVIDER_NAMES = {
     "claude": "Claude",
     "perplexity": "Perplexity",
     "duckduckgo": "DuckDuckGo",
-    "google_ai": "Google AI",
+    "gemini": "Gemini",
     "custom": "Custom",
 }
 

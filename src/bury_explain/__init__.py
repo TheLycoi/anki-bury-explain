@@ -34,13 +34,23 @@ def _get_config():
     return {**logic.DEFAULT_CONFIG, **(mw.addonManager.getConfig(__name__) or {})}
 
 
-def _open_help(url, cfg):
+def _open_help(url, cfg, prompt=""):
     """Route the built URL to the sidebar or the system browser."""
+    provider = cfg.get("provider", "chatgpt")
     if cfg.get("open_in", "sidebar") == "sidebar":
         from . import sidebar
 
-        label = logic.provider_display_name(cfg.get("provider", "chatgpt"))
-        sidebar.open_url(url, label)
+        label = logic.provider_display_name(provider)
+        # ChatGPT: force a real Temporary Chat. Load ?temporary-chat=true with
+        # no q= (an auto-submit would create a saved conversation and drop temp
+        # mode), then type + send the prompt ourselves once the composer loads.
+        # Gemini has no reliable q= auto-submit, so it uses the same injection
+        # path: load the home/app URL and type + send the prompt ourselves.
+        if (provider or "").strip().lower() in ("chatgpt", "gemini") and prompt:
+            temp_url = logic.provider_home_url(provider, "")
+            sidebar.open_url(temp_url, label, inject_prompt=prompt)
+        else:
+            sidebar.open_url(url, label)
     else:
         openLink(url)
 
@@ -80,7 +90,7 @@ def _act_on_card(card, agains, cfg):
             except Exception as exc:
                 print(f"[bury_explain] tag failed: {exc}", file=sys.stderr)
 
-        _open_help(url, cfg)
+        _open_help(url, cfg, prompt=prompt)
 
         if cfg.get("show_notification", True):
             tooltip(
