@@ -25,7 +25,8 @@ grinding the same card into the ground.
 
 ## Install
 
-- **AnkiWeb:** _(coming soon — placeholder link)_ https://ankiweb.net/shared/info/PLACEHOLDER
+- **AnkiWeb:** https://ankiweb.net/shared/info/1712717227 — or in Anki go to
+  Tools > Add-ons > Get Add-ons and paste the code `1712717227`.
 - **Manual:** download the latest `bury_explain.ankiaddon` and double-click
   it to install into Anki.
 
