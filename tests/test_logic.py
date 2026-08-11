@@ -1,4 +1,4 @@
-"""Unit tests for bury_explain.logic — pure Python, no Anki required.
+"""Unit tests for bury_explain.logic, pure Python, no Anki required.
 
 Run from the repo root:  python3 -m unittest discover tests
 """
@@ -52,6 +52,93 @@ class CleanCardTextTests(unittest.TestCase):
         self.assertEqual(
             logic.clean_card_text("a&nbsp;&amp;&nbsp;b   c"), "a & b c"
         )
+
+
+class SelectCardFieldsTests(unittest.TestCase):
+    def test_front_and_back(self):
+        pairs = logic.select_card_fields({"Front": "What is 2+2?", "Back": "4"})
+        self.assertEqual(pairs, [("Front", "What is 2+2?"), ("Back", "4")])
+
+    def test_front_back_and_context(self):
+        pairs = logic.select_card_fields(
+            {"Front": "q", "Back": "a", "Extra": "extra info"}
+        )
+        self.assertEqual(pairs, [("Front", "q"), ("Back", "a"), ("Context", "extra info")])
+
+    def test_alternate_field_names(self):
+        pairs = logic.select_card_fields(
+            {"Question": "q", "Answer": "a", "Source": "textbook p. 3"}
+        )
+        self.assertEqual(
+            pairs, [("Front", "q"), ("Back", "a"), ("Context", "textbook p. 3")]
+        )
+
+    def test_skips_empty_fields(self):
+        pairs = logic.select_card_fields({"Front": "q", "Back": "  ", "Extra": ""})
+        self.assertEqual(pairs, [("Front", "q")])
+
+    def test_falls_back_to_first_nonempty_field(self):
+        pairs = logic.select_card_fields({"Kanji": "", "Reading": "inu"})
+        self.assertEqual(pairs, [("Front", "inu")])
+
+    def test_all_empty_returns_nothing(self):
+        self.assertEqual(logic.select_card_fields({"Front": "", "Back": ""}), [])
+
+
+class FormatCardFieldsTests(unittest.TestCase):
+    def test_labels_front_and_back(self):
+        text = logic.format_card_fields({"Front": "capital of France", "Back": "Paris"})
+        self.assertEqual(text, "Front: capital of France\nBack: Paris")
+
+    def test_empty_fields_returns_empty_string(self):
+        self.assertEqual(logic.format_card_fields({}), "")
+
+    def test_drops_lowest_priority_field_when_over_cap(self):
+        text = logic.format_card_fields(
+            {"Front": "q", "Back": "b" * 20, "Extra": "c" * 50}, max_chars=40
+        )
+        self.assertNotIn("Context:", text)
+        self.assertIn("Back:", text)
+        self.assertLessEqual(len(text), 40)
+
+    def test_truncates_single_field_at_word_boundary(self):
+        long_value = "word " * 100
+        text = logic.format_card_fields({"Front": long_value}, max_chars=50)
+        self.assertLessEqual(len(text), 50)
+        self.assertFalse(text.endswith("wor"))
+
+    def test_under_cap_untouched(self):
+        text = logic.format_card_fields({"Front": "short", "Back": "answer"})
+        self.assertEqual(text, "Front: short\nBack: answer")
+
+    def test_cleans_html_before_capping(self):
+        # A pasted base64 image dwarfs the cap in raw form, but cleans down
+        # to a short "[image]" marker, so it should not push the answer out.
+        heavy_front = (
+            '<img src="data:image/png;base64,' + "A" * 3000 + '">'
+            "What nerve innervates the diaphragm?"
+        )
+        text = logic.format_card_fields(
+            {"Front": heavy_front, "Back": "Phrenic nerve, C3-C5", "Extra": "C3, 4, 5 keeps it alive"}
+        )
+        self.assertIn("Phrenic nerve, C3-C5", text)
+        self.assertIn("What nerve innervates the diaphragm?", text)
+        self.assertIn("C3, 4, 5 keeps it alive", text)
+        self.assertNotIn("base64", text)
+        self.assertLess(len(text), 300)
+
+    def test_html_only_field_treated_as_empty(self):
+        # A field that is pure non-image markup (no text, no image) cleans
+        # down to nothing and should be skipped, not kept as an empty line.
+        text = logic.format_card_fields(
+            {"Front": "q", "Back": "  <br>  ", "Extra": "<div></div>"}
+        )
+        self.assertEqual(text, "Front: q")
+
+    def test_preserves_newlines_between_labelled_lines(self):
+        text = logic.format_card_fields({"Front": "q", "Back": "a", "Extra": "why"})
+        self.assertEqual(text.count("\n"), 2)
+        self.assertIn("Front: q\nBack: a\nContext: why", text)
 
 
 class ShouldTriggerTests(unittest.TestCase):
@@ -141,6 +228,15 @@ class BuildPromptTests(unittest.TestCase):
     def test_default_template_audits_against_rules(self):
         self.assertIn("rule", logic.DEFAULT_PROMPT_TEMPLATE.lower())
 
+    def test_default_template_grounds_and_hedges(self):
+        lowered = logic.DEFAULT_PROMPT_TEMPLATE.lower()
+        self.assertIn("card content below", lowered)
+        self.assertIn("mark", lowered)
+        self.assertIn("not sure", lowered)
+
+    def test_default_template_under_length_ceiling(self):
+        self.assertLess(len(logic.DEFAULT_PROMPT_TEMPLATE), 1800)
+
     def test_default_template_renders_rule_audit(self):
         out = logic.build_prompt(logic.DEFAULT_PROMPT_TEMPLATE, 3, "photosynthesis")
         self.assertIn("rule", out.lower())
@@ -164,6 +260,23 @@ class BuildPromptTests(unittest.TestCase):
         out = logic.build_prompt("", 5, "topic")
         self.assertIn("topic", out)
         self.assertIn("5 times", out)
+
+    def test_html_heavy_card_survives_into_prompt(self):
+        # Regression for the round-1 defect: a base64 <img> in Front used to
+        # eat the whole length budget before cleaning ran, so Back and
+        # Context got dropped and the model saw only "Front: <img". Cleaning
+        # must happen before capping so the answer text reaches the prompt.
+        heavy_front = (
+            '<img src="data:image/png;base64,' + "A" * 3000 + '">'
+            "What nerve innervates the diaphragm?"
+        )
+        card_text = logic.format_card_fields(
+            {"Front": heavy_front, "Back": "Phrenic nerve, C3-C5", "Extra": "C3, 4, 5 keeps the diaphragm alive"}
+        )
+        out = logic.build_prompt(logic.DEFAULT_PROMPT_TEMPLATE, 3, card_text)
+        self.assertIn("Phrenic nerve, C3-C5", out)
+        self.assertIn("What nerve innervates the diaphragm?", out)
+        self.assertNotIn("base64", out)
 
 
 class ProviderUrlTests(unittest.TestCase):

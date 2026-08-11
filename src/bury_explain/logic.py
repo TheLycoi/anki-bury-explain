@@ -15,11 +15,16 @@ TYPE_LEARNING = 1
 # Also audits the card against Wozniak's "Twenty rules of formulating
 # knowledge" so failed cards get concrete rewrite suggestions in addition
 # to an explanation. The rule list is embedded (compact, <=6 words each) so the
-# AI is grounded even without web access. Keep under ~1500 chars: this
-# prompt travels URL-encoded in a query param.
+# AI is grounded even without web access. Also tells the model to ground its
+# answer in the card content, mark anything it adds, and admit uncertainty
+# rather than invent. Keep under ~1800 chars: this prompt travels
+# URL-encoded in a query param.
 DEFAULT_PROMPT_TEMPLATE = (
     "I just failed this Anki card {agains} times in a row. Help me actually "
-    "understand it:\n\n"
+    "understand it. Base your answer on the card content below, mark "
+    "clearly anything you add beyond it, and say you are not sure rather "
+    "than guess if the card is ambiguous or the answer is not derivable "
+    "from what is given:\n\n"
     "1. Explain the core concept simply in 1-2 sentences.\n"
     "2. Give me one mnemonic or memory hook.\n"
     "3. Tell me what I'm most likely confusing this with.\n\n"
@@ -38,7 +43,8 @@ DEFAULT_PROMPT_TEMPLATE = (
     "Card content: {card}"
 )
 
-# Shipped defaults. config.json is generated to match this dict.
+# Shipped defaults. build.py generates config.json from this dict, so the
+# two never drift.
 DEFAULT_CONFIG = {
     "enabled": True,
     "again_threshold": 3,
@@ -106,6 +112,109 @@ def clean_card_text(text):
     # Collapse whitespace.
     text = re.sub(r"\s+", " ", text).strip()
     return text
+
+
+# Field-name candidates, in priority order, for each side of the card.
+QUESTION_FIELD_NAMES = ("Front", "Text", "Question", "Expression")
+ANSWER_FIELD_NAMES = ("Back", "Answer", "Meaning")
+CONTEXT_FIELD_NAMES = ("Extra", "Back Extra", "Notes", "Source")
+
+# Total labelled card text is capped near this length so the URL-encoded
+# prompt stays viable.
+MAX_CARD_TEXT_CHARS = 1200
+
+
+def _first_named_field(fields, names):
+    """Return the first field, among the given names, that is non-empty once
+    HTML/cloze markup is stripped, or None.
+
+    The value is returned already cleaned via ``clean_card_text``, so markup
+    weight never reaches the caller and never counts against the length cap.
+    """
+    for name in names:
+        if name in fields:
+            value = fields[name]
+            if value:
+                cleaned = clean_card_text(value)
+                if cleaned:
+                    return cleaned
+    return None
+
+
+def select_card_fields(fields):
+    """Pick the question, answer, and context text out of a note's fields.
+
+    ``fields`` is a plain dict of field name to field value (as stored, HTML
+    and all). Each candidate value is cleaned with ``clean_card_text`` before
+    it is judged empty or non-empty, so a field that is pure markup (a pasted
+    image, a styled wrapper) is treated as empty rather than as content.
+    Returns a list of ``(label, value)`` pairs, already cleaned, in priority
+    order (Front, then Back, then Context), skipping any side with no match.
+    When none of the known field names match anything, falls back to the
+    first field that is non-empty after cleaning, labelled "Front", matching
+    the add-on's original single-field behaviour.
+    """
+    front = _first_named_field(fields, QUESTION_FIELD_NAMES)
+    back = _first_named_field(fields, ANSWER_FIELD_NAMES)
+    context = _first_named_field(fields, CONTEXT_FIELD_NAMES)
+
+    pairs = []
+    if front:
+        pairs.append(("Front", front))
+    if back:
+        pairs.append(("Back", back))
+    if context:
+        pairs.append(("Context", context))
+
+    if not pairs:
+        for value in fields.values():
+            if value:
+                cleaned = clean_card_text(value)
+                if cleaned:
+                    pairs.append(("Front", cleaned))
+                    break
+
+    return pairs
+
+
+def format_card_fields(fields, max_chars=MAX_CARD_TEXT_CHARS):
+    """Select and label a note's fields, capped at ``max_chars`` total.
+
+    Produces lines like ``Front: ...`` then ``Back: ...`` then
+    ``Context: ...`` so the model can tell the sides apart. Each field value
+    is cleaned of HTML/cloze markup (via ``select_card_fields``) before the
+    cap is applied, so the budget governs real content rather than markup
+    weight, and the newlines between labelled lines are the last whitespace
+    transform applied. No further whitespace collapsing happens after this
+    function returns, so the line structure survives into the prompt. If the
+    labelled text runs over the cap, the lowest-priority fields are dropped
+    first (Context, then Back). If even the single remaining field is too
+    long, it is truncated at the last word boundary within the budget rather
+    than mid-word.
+    """
+    pairs = select_card_fields(fields)
+    if not pairs:
+        return ""
+
+    def render(p):
+        return "\n".join(f"{label}: {value}" for label, value in p)
+
+    text = render(pairs)
+    while len(text) > max_chars and len(pairs) > 1:
+        pairs = pairs[:-1]
+        text = render(pairs)
+
+    if len(text) <= max_chars:
+        return text
+
+    # Still too long with a single field: truncate at a word boundary.
+    label, value = pairs[0]
+    prefix = f"{label}: "
+    budget = max(max_chars - len(prefix), 0)
+    truncated = value[:budget]
+    if " " in truncated and len(truncated) < len(value):
+        truncated = truncated.rsplit(" ", 1)[0]
+    return f"{prefix}{truncated}"
 
 
 def should_trigger(cfg, ease, agains, card_type, model_name):
