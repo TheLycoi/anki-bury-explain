@@ -6,6 +6,8 @@ tiny and free of UI so the interesting decision-making stays in ``logic.py``.
 
 import time
 
+from . import logic
+
 
 def count_recent_agains(col, card_id, timeframe_hours):
     """Count "Again" (ease=1) reviews for a card within the timeframe.
@@ -29,17 +31,20 @@ def count_recent_agains(col, card_id, timeframe_hours):
 
 
 def get_card_text(card):
-    """Extract the most relevant text from a card (front field, then fallbacks)."""
-    note = card.note()
-    for field_name in ("Front", "Text", "Question", "Expression"):
-        if field_name in note:
-            value = note[field_name]
-            if value and value.strip():
-                return value
-    for field_value in note.fields:
-        if field_value and field_value.strip():
-            return field_value
-    return ""
+    """Extract labelled, markup-cleaned question, answer, and context text
+    from a card's note.
+
+    The field-name matching, HTML/cloze cleaning, and formatting live in
+    ``logic.format_card_fields`` so they stay pure and testable; this
+    function's only job is reading the real note object safely. The
+    returned text is already clean and ready to drop into a prompt as-is.
+    """
+    try:
+        note = card.note()
+        fields = {name: note[name] for name in note.keys()}
+        return logic.format_card_fields(fields)
+    except Exception:
+        return ""
 
 
 def get_model_name(card):

@@ -9,6 +9,17 @@ optionally tags it, and opens your preferred AI chat provider with the card's
 content pre-searched, so you get an explanation immediately instead of
 grinding the same card into the ground.
 
+## What it does not touch
+
+Bury Explain only runs inside Anki's `reviewer_did_answer_card` hook, which
+fires after Anki has already written the review to its log and updated the
+card's scheduling state. So your fail is scored normally no matter what the
+add-on does next, and burying only moves the card's due date; it does not
+undo or backdate the grade. The add-on also never writes AI output into your
+notes or fields. It sends the card's text to whichever provider you
+configured and opens the reply in a sidebar or browser; nothing comes back
+into your collection.
+
 ## Features
 
 - Auto-bury: cards that cross a configurable fail threshold within a time

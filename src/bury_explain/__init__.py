@@ -65,7 +65,12 @@ def _act_on_card(card, agains, cfg):
     from . import collector
 
     # Build the URL first so it is always available for the browser fallback.
-    card_text = logic.clean_card_text(collector.get_card_text(card))
+    # collector.get_card_text already returns markup-cleaned, labelled text
+    # (logic.format_card_fields cleans each field before capping/joining), so
+    # no further cleaning happens here. Re-running clean_card_text on the
+    # already-joined text would collapse the Front/Back/Context newlines back
+    # into one line.
+    card_text = collector.get_card_text(card)
     prompt = logic.build_prompt(cfg.get("prompt_template", ""), agains, card_text)
     url = logic.provider_url(cfg.get("provider", "chatgpt"), cfg.get("custom_url", ""), prompt)
 
@@ -73,8 +78,6 @@ def _act_on_card(card, agains, cfg):
         # Bury.
         if cfg.get("bury", True):
             try:
-                mw.col.sched.bury_cards([card.id], manual=False)
-            except TypeError:
                 mw.col.sched.bury_cards([card.id])
             except Exception as exc:
                 print(f"[bury_explain] bury failed: {exc}", file=sys.stderr)
@@ -94,7 +97,8 @@ def _act_on_card(card, agains, cfg):
 
         if cfg.get("show_notification", True):
             tooltip(
-                f"Bury Explain: buried after {agains} fails, asking AI",
+                f"Bury Explain: grade recorded, buried after {agains} "
+                "fails (schedule untouched), asking AI",
                 period=3000,
             )
     except Exception as exc:
